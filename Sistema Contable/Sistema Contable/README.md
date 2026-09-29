@@ -17,9 +17,100 @@ Cumple con los requisitos de la practica: Libro Diario con partida doble, mayori
 
 ## 2. Instalacion
 
-El proyecto ya esta instalado y la base de datos ya fue creada. Para usarlo:
+### En una computadora nueva (un clic)
 
-1. Inicia **Apache** desde el panel de control de XAMPP.
+1. Instala **XAMPP** y **PostgreSQL 18**.
+2. Copia esta carpeta completa en `C:\xampp\htdocs\SistemaContable`.
+3. Doble clic en **`INSTALAR.bat`**.
+
+Eso es todo. El instalador se encarga solo de:
+
+- Copiar el proyecto a `C:\xampp\htdocs\SistemaContable` (si no esta ya).
+- Habilitar `pdo_pgsql` y `pgsql` en `php.ini`, sin duplicar modulos.
+- Detectar el puerto real de PostgreSQL (prueba 5432, 5433 y los que aparecen en el
+  registro) y la contrasena que le hayas puesto.
+- Guardar esos datos en `config/config.php`.
+- Levantar Apache.
+- Crear la base de datos y cargar las 404 cuentas del catalogo.
+- Decirte que hacer si algo falta.
+
+Despues, para iniciar el sistema en el dia a dia, doble clic en **`INICIAR.bat`**.
+
+### Instalacion manual (si prefieres hacerlo paso a paso)
+
+**Paso 1 — Instala XAMPP**
+
+1. Descarga XAMPP de <https://www.apachefriends.org/es/index.html> e instalalo.
+2. Abre **XAMPP Control Panel** y presiona **Start** en la fila **Apache**.
+3. No presiones el boton *MySQL*: este proyecto no usa MySQL.
+
+**Paso 2 — Habilita PostgreSQL en el PHP de XAMPP**
+
+Abre `C:\xampp\php\php.ini` con el Bloc de notas y verifica que existan estas dos lineas
+(sin el `;` al inicio):
+
+```ini
+extension=pdo_pgsql
+extension=pgsql
+```
+
+Guarda y presiona **Stop** y luego **Start** en Apache para que las cargue.
+
+> Si ya existe una linea activa `extension=pgsql`, **no** agregues otra: PHP mostraria
+> un aviso de modulo duplicado. Lo mismo con `pdo_pgsql`.
+
+**Paso 3 — Instala PostgreSQL**
+
+1. Descarga e instala PostgreSQL 18 (<https://www.postgresql.org/download-windows/>).
+   Al instalarlo anota la **contrasena** del usuario `postgres`.
+2. Deja marcada la opcion de registrar el servicio, para que arranque con Windows.
+
+**Paso 4 — Copia el proyecto**
+
+Copia la carpeta completa del proyecto en `C:\xampp\htdocs\`:
+
+```
+C:\xampp\htdocs\SistemaContable\
+```
+
+> Importante: deben quedar los archivos `config\`, `database\`, `includes\`, `assets\`,
+> `diario\`, `mayor\`, `catalogo\`, `reportes\`, `api\`, `ajustes\`, `instalar.php`
+> e `index.php`. Si copias solo algunas carpetas, no funciona.
+
+**Paso 5 — Ajusta la conexion si hace falta**
+
+Abre `config\config.php`. Lo unico que suele cambiar es el **puerto** y la **contrasena**:
+
+| Constante | Valor por defecto | Cuando cambiarlo |
+|-----------|-------------------|------------------|
+| `DB_PORT` | `5433` | Si PostgreSQL se instalo en el puerto estandar, pon `5432` |
+| `DB_PASS` | *(vacio)* | Si le pusiste contrasena al usuario `postgres` |
+
+Para saber el puerto real, abre `pgAdmin 4` o el *SQL Shell* de PostgreSQL y conectate;
+el puerto aparece en la ventana de conexion. Este valor se puede leer del registro de
+Windows en `HKLM\SOFTWARE\PostgreSQL`.
+
+**Paso 6 — Crea la base de datos**
+
+Abre en el navegador:
+
+```
+http://localhost/SistemaContable/instalar.php
+```
+
+El instalador crea la base `contabilidad`, las tablas y las 404 cuentas del catalogo.
+Si todo sale **OK**, ya puedes entrar al sistema.
+
+**Paso 7 — Listo**
+
+```
+http://localhost/SistemaContable/
+```
+
+### En esta computadora (ya instalado)
+
+1. Inicia **Apache** desde el panel de control de XAMPP, o doble clic en el acceso
+   directo **Sistema Contable** del Escritorio, que tambien abre el navegador.
 2. Abre en el navegador:
    `http://localhost/SistemaContable/`
 
@@ -33,6 +124,15 @@ Si necesitas volver a crear tablas y catalogo desde cero, entra a:
 `http://localhost/SistemaContable/instalar.php`
 
 El instalador es idempotente: se puede ejecutar varias veces sin duplicar el catalogo.
+**Ojo:** no borra los asientos que ya hayas registrado.
+
+### Los archivos .bat
+
+| Archivo | Para que sirve |
+|---------|----------------|
+| `INSTALAR.bat` | Solo la primera vez, en una computadora nueva. Instala todo. |
+| `INICIAR.bat` | Cada dia. Prende PostgreSQL, Apache y abre el navegador. |
+| `iniciar_apache.vbs` | Ayuda interna de `INICIAR.bat`: levanta Apache desacoplado. |
 
 ## 3. Configuracion
 
@@ -63,14 +163,17 @@ Los datos de la empresa (nombre, carrera, asignatura y profesor) se editan desde
 ```
 config/config.php          Datos de conexion y ajustes generales
 database/01_esquema.sql    Creacion de tablas
-database/02_catalogo.sql   Catalogo de cuentas (401 cuentas)
+database/02_catalogo.sql   Catalogo de cuentas (404 cuentas)
 includes/functions.php     Funciones auxiliares, saldos y validaciones
 includes/header.php        Encabezado, menu y mensajes
 includes/footer.php        Pie de pagina
 assets/css/estilos.css     Estilos propios y formato de reportes
 assets/js/asiento.js       Selector jerarquico de cuentas y validacion
 api/cuentas.php            Busqueda de cuentas en JSON (para el formulario)
-instalar.php               Instalador de la base de datos
+instalar.php               Instalador de la base de datos (desde el navegador)
+instalar_pc.php            Instalador automatico para una computadora nueva (solo consola)
+INSTALAR.bat               Lanzador del instalador automatico
+INICIAR.bat                Inicia PostgreSQL + Apache y abre el navegador
 index.php                  Pagina de inicio (resumen)
 diario/                    Libro Diario: listar, nuevo, editar, ver, guardar, eliminar
 mayor/index.php            Libro Mayor
@@ -97,7 +200,7 @@ de las cuentas afectadas. Los reportes se obtienen en tiempo real sumando las pa
 por lo que el Balance de Comprobacion siempre debe mostrar
 *PARTIDA DOBLE CORRECTA*.
 
-El catalogo incluye **401 cuentas**, de las cuales **279 son cuentas de detalle** aptas para
+El catalogo incluye **404 cuentas**, de las cuales **281 son cuentas de detalle** aptas para
 registrar movimientos. El ultimo asiento de cada grupo se actualiza mediante el trigger
 `trg_asientos_updated`.
 

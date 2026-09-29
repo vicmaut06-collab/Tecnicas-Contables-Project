@@ -3,8 +3,31 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/functions.php';
 
-$pdo = dbSinBase();
+/* Diagnostico previo: es mas util saber que falta que ver un error generico. */
+$diagnostico = [];
 
+if (!extension_loaded('pdo_pgsql')) {
+    $diagnostico[] = 'La extension <code>pdo_pgsql</code> no esta habilitada en PHP. '
+        . 'Abre <code>C:\\xampp\\php\\php.ini</code>, agrega <code>extension=pdo_pgsql</code> '
+        . 'y <code>extension=pgsql</code>, luego reinicia Apache.';
+}
+
+if (!extension_loaded('pgsql')) {
+    $diagnostico[] = 'La extension <code>pgsql</code> no esta habilitada en PHP.';
+}
+
+try {
+    $pdo = dbSinBase();
+} catch (Throwable $e) {
+    $diagnostico[] = 'No se pudo conectar a PostgreSQL en <code>' . e(DB_HOST) . ':' . e(DB_PORT) . '</code>: '
+        . e($e->getMessage())
+        . '<br>Revisa que el servicio PostgreSQL este iniciado y que el puerto y la contrasena '
+        . 'de <code>config/config.php</code> sean correctos. El puerto por defecto de PostgreSQL es 5432.';
+
+    $pdo = null;
+}
+
+if ($pdo instanceof PDO) {
 // En PostgreSQL la base se crea solo si no existe
 $existe = $pdo->prepare('SELECT 1 FROM pg_database WHERE datname = ?');
 $existe->execute([DB_NAME]);
@@ -53,6 +76,10 @@ $log[] = ['ok' => true, 'texto' => 'Cuentas registradas en el catalogo: ' . $tot
 
 $hojas = (int)$pdo->query('SELECT COUNT(*) FROM catalogo_cuentas WHERE es_hoja = 1')->fetchColumn();
 $log[] = ['ok' => true, 'texto' => 'Cuentas de detalle (hojas): ' . $hojas];
+} else {
+    $log = [];
+    $todoOk = false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -79,7 +106,25 @@ $log[] = ['ok' => true, 'texto' => 'Cuentas de detalle (hojas): ' . $hojas];
                 <div class="alert alert-success">La base de datos quedo lista. Puede volver a instalar en cualquier momento: el catalogo no se duplica.</div>
                 <a class="btn btn-success" href="<?= e(url('index.php')) ?>">Ir al sistema</a>
             <?php else: ?>
-                <div class="alert alert-danger">Verifique que MySQL/MariaDB este encendido y que el usuario y contrasena de <code>config/config.php</code> sean correctos.</div>
+                <div class="alert alert-danger mb-2">
+                    <strong>No se pudo completar la instalacion.</strong>
+                    <?php if ($diagnostico): ?>
+                        <ul class="mb-0 mt-2">
+                            <?php foreach ($diagnostico as $d): ?>
+                                <li><?= $d ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <p class="mb-0 mt-2">
+                            Revisa que el servicio <strong>PostgreSQL</strong> este encendido y que el
+                            puerto y la contrasena de <code>config/config.php</code> sean correctos.
+                        </p>
+                    <?php endif; ?>
+                </div>
+                <p class="small text-muted mb-0">
+                    El puerto por defecto de PostgreSQL es <code>5432</code>. Este proyecto usa
+                    <code><?= e(DB_PORT) ?></code> porque en la computadora original se configuro asi.
+                </p>
             <?php endif; ?>
         </div>
     </div>
