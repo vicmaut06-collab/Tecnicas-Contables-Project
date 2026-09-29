@@ -178,28 +178,55 @@ foreach ($candidatos as $p) {
 }
 
 if ($puertoOk === null) {
-    $t('  No se pudo conectar sin contrasena.');
-    $t('  Escribe la contrasena que le pusiste al usuario postgres al instalar PostgreSQL.');
-    $t('  (Dejala vacia y presiona Enter si no le pusiste ninguna.)');
     $t('');
-    fwrite(STDOUT, '  Contrasena: ');
-    $linea = fgets(STDIN);
-    $clave = $linea === false ? '' : rtrim($linea, "\r\n");
+    $t('  PostgreSQL pide contrasena (es lo normal en una instalacion nueva).');
+    $t('  Escribe la que le pusiste al usuario postgres.');
+    $t('  Recuerda: no se muestra nada mientras escribes.');
+    $t('');
 
-    foreach ($candidatos as $p) {
-        if (probar('127.0.0.1', $p, $usuario, $clave)) {
-            $puertoOk = $p;
+    for ($intento = 1; $intento <= 3; $intento++) {
+        fwrite(STDOUT, "  Contrasena (intento $intento de 3): ");
+        $linea = fgets(STDIN);
+        $clave = $linea === false ? '' : rtrim($linea, "\r\n");
+
+        foreach ($candidatos as $p) {
+            if (probar('127.0.0.1', $p, $usuario, $clave)) {
+                $puertoOk = $p;
+                break;
+            }
+        }
+        if ($puertoOk !== null) {
             break;
+        }
+        $mal('Contrasena incorrecta o el puerto no es el correcto.');
+        if ($intento < 3) {
+            $t('');
         }
     }
 }
 
 if ($puertoOk === null) {
-    $mal('No se pudo conectar a PostgreSQL con ninguna combinacion de puerto y contrasena.');
+    $mal('No se pudo conectar a PostgreSQL.');
     $t('');
-    $t('  Revisa que:');
-    $t('   1. PostgreSQL este instalado y el servicio este corriendo.');
-    $t('   2. La contrasena sea la del usuario postgres.');
+    $t('  Revisa estas dos cosas:');
+    $t('   1. Que el servicio PostgreSQL este corriendo.');
+    $t('      Cierra esta ventana, abre services.msc y busca "postgresql-x64-18"');
+    $t('      (o cualquier version que tengas). Si esta detenido, presiona Iniciar.');
+    $t('   2. Que la contrasena sea la del usuario postgres.');
+    $t('');
+    $t('  SI NO RECUERDAS LA CONTRASENA, recuperala asi:');
+    $t('   a) Abre el Explorador de archivos y pega en la barra de direcciones:');
+    $t('      C:\\Program Files\\PostgreSQL');
+    $t('   b) Entra a la carpeta "data" y abre pg_hba.conf con el Bloc de notas.');
+    $t('   c) En la linea que empieza con "host ... 127.0.0.1/32" cambia');
+    $t('      la palabra "trust" por "scram-sha-256" y guarda.');
+    $t('   d) Reinicia PostgreSQL desde services.msc.');
+    $t('   e) Vuelve a ejecutar este instalador.');
+    $t('');
+    $t('  (El paso c es al reves: si PostgreSQL te pide contrasena pero el sistema');
+    $t('  dice que no, el problema es que pg_hba.conf sigue en "trust".)');
+    $t('');
+    $t('  Nada se modifico: config/config.php quedo como estaba.');
     $t('');
     exit(1);
 }
